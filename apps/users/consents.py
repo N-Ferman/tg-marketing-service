@@ -9,10 +9,10 @@ from django.utils import timezone
 
 from apps.users.models import Consent, User
 
-CURRENT_DOCUMENT_VERSIONS = {
-    Consent.DocumentType.PRIVACY_POLICY: "2026-07-01",
-    Consent.DocumentType.PERSONAL_DATA: "2026-07-01",
-    Consent.DocumentType.COOKIE_ANALYTICS: "2026-07-01",
+CURRENT_DOCUMENT_VERSIONS: dict[str, str] = {
+    Consent.DocumentType.PRIVACY_POLICY.value: "2026-07-01",
+    Consent.DocumentType.PERSONAL_DATA.value: "2026-07-01",
+    Consent.DocumentType.COOKIE_ANALYTICS.value: "2026-07-01",
 }
 
 SOCIAL_CONSENT_SESSION_KEY = "pending_yandex_oauth_consent"
@@ -113,8 +113,11 @@ def pop_yandex_oauth_consent(request: HttpRequest) -> dict[str, str] | None:
     document_type = consent.get("document_type")
     version = consent.get("version")
     source = consent.get("source")
-    values = (document_type, version, source)
-    if not all(isinstance(value, str) for value in values):
+    if not isinstance(document_type, str):
+        return None
+    if not isinstance(version, str):
+        return None
+    if not isinstance(source, str):
         return None
     return {
         "document_type": document_type,

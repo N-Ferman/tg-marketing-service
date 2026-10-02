@@ -2,6 +2,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from django.contrib.sessions.backends.signed_cookies import SessionStore
+from django.http import HttpRequest
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
@@ -81,13 +83,13 @@ class YandexOAuthConsentTest(TestCase):
             is_existing=False,
         )
 
-    def _request(self):
+    def _request(self) -> HttpRequest:
         request = self.factory.get(
             "/accounts/yandex/login/callback/",
             REMOTE_ADDR="203.0.113.20",
             HTTP_USER_AGENT="YandexOAuthTest/1.0",
         )
-        request.session = {}
+        request.session = SessionStore()
         return request
 
     def test_yandex_signup_is_closed_without_consent(self) -> None:
