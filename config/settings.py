@@ -121,6 +121,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.users.middleware.YandexOAuthConsentMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "inertia.middleware.InertiaMiddleware",
     "apps.users.middleware.RoleMiddleware",
@@ -150,6 +151,7 @@ SOCIALACCOUNT_PROVIDERS = {
         },
     }
 }
+SOCIALACCOUNT_ADAPTER = "apps.users.adapters.MarketingSocialAccountAdapter"
 
 ROOT_URLCONF = "config.urls"
 
