@@ -52,9 +52,8 @@ class YandexOAuthConsentMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        if (
-            request.path.endswith("/accounts/yandex/login/")
-            and request_has_consent(request)
-        ):
+        if request.path.endswith(
+            "/accounts/yandex/login/"
+        ) and request_has_consent(request):
             stash_yandex_oauth_consent(request)
         return self.get_response(request)
