@@ -4,13 +4,14 @@ from unittest.mock import patch
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.sessions.backends.signed_cookies import SessionStore
 from django.http import HttpRequest
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from apps.users.adapters import MarketingSocialAccountAdapter
 from apps.users.consents import (
-    CURRENT_DOCUMENT_VERSIONS,
     SOCIAL_CONSENT_SESSION_KEY,
+    get_client_ip,
+    get_current_document_version,
     stash_yandex_oauth_consent,
 )
 from apps.users.models import Consent, User
@@ -74,6 +75,30 @@ class ConsentHistoryTest(TestCase):
             Consent.objects.filter(pk=consent.pk).update(version="2026-08-01")
 
 
+class ConsentClientIPTest(TestCase):
+    def setUp(self) -> None:
+        self.factory = RequestFactory()
+
+    def test_x_forwarded_for_is_ignored_without_trusted_proxy(self) -> None:
+        request = self.factory.post(
+            "/auth/create/",
+            REMOTE_ADDR="198.51.100.10",
+            HTTP_X_FORWARDED_FOR="203.0.113.55",
+        )
+
+        self.assertEqual(get_client_ip(request), "198.51.100.10")
+
+    @override_settings(TRUSTED_PROXY_IPS=["198.51.100.10"])
+    def test_x_forwarded_for_is_used_from_trusted_proxy(self) -> None:
+        request = self.factory.post(
+            "/auth/create/",
+            REMOTE_ADDR="198.51.100.10",
+            HTTP_X_FORWARDED_FOR="203.0.113.55, 198.51.100.10",
+        )
+
+        self.assertEqual(get_client_ip(request), "203.0.113.55")
+
+
 class YandexOAuthConsentTest(TestCase):
     def setUp(self) -> None:
         self.factory = RequestFactory()
@@ -130,7 +155,7 @@ class YandexOAuthConsentTest(TestCase):
         )
         self.assertEqual(
             consent.version,
-            CURRENT_DOCUMENT_VERSIONS[Consent.DocumentType.PERSONAL_DATA],
+            get_current_document_version(Consent.DocumentType.PERSONAL_DATA),
         )
         self.assertEqual(consent.source, Consent.Source.YANDEX_OAUTH)
         self.assertEqual(consent.ip, "203.0.113.20")

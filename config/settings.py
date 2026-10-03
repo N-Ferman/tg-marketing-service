@@ -64,6 +64,11 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = env_bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = ["*"]
+TRUSTED_PROXY_IPS = [
+    value.strip()
+    for value in os.getenv("TRUSTED_PROXY_IPS", "").split(",")
+    if value.strip()
+]
 
 
 # Application definition

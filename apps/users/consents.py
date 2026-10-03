@@ -4,16 +4,12 @@ import ipaddress
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from django.conf import settings
 from django.http import HttpRequest
 from django.utils import timezone
 
+from apps.legal.documents import get_consent_document_version
 from apps.users.models import Consent, User
-
-CURRENT_DOCUMENT_VERSIONS: dict[str, str] = {
-    Consent.DocumentType.PRIVACY_POLICY.value: "2026-07-01",
-    Consent.DocumentType.PERSONAL_DATA.value: "2026-07-01",
-    Consent.DocumentType.COOKIE_ANALYTICS.value: "2026-07-01",
-}
 
 SOCIAL_CONSENT_SESSION_KEY = "pending_yandex_oauth_consent"
 SOCIAL_CONSENT_TTL = timedelta(minutes=15)
@@ -21,7 +17,7 @@ TRUTHY_CONSENT_VALUES = {"1", "true", "on", "yes"}
 
 
 def get_current_document_version(document_type: str) -> str:
-    return CURRENT_DOCUMENT_VERSIONS[document_type]
+    return get_consent_document_version(document_type)
 
 
 def has_consent_value(value: Any) -> bool:
@@ -55,9 +51,28 @@ def _safe_ip(value: str | None) -> str | None:
     return candidate
 
 
+def _is_trusted_proxy(ip: str | None) -> bool:
+    if ip is None:
+        return False
+    try:
+        address = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+
+    for proxy in getattr(settings, "TRUSTED_PROXY_IPS", ()):
+        try:
+            if address in ipaddress.ip_network(proxy, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def get_client_ip(request: HttpRequest) -> str | None:
-    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    return _safe_ip(forwarded_for) or _safe_ip(request.META.get("REMOTE_ADDR"))
+    remote_addr = _safe_ip(request.META.get("REMOTE_ADDR"))
+    if _is_trusted_proxy(remote_addr):
+        return _safe_ip(request.META.get("HTTP_X_FORWARDED_FOR")) or remote_addr
+    return remote_addr
 
 
 def get_user_agent(request: HttpRequest) -> str:

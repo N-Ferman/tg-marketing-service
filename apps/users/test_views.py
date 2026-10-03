@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.billing.models import Plan, Subscription
-from apps.users.consents import CURRENT_DOCUMENT_VERSIONS
+from apps.users.consents import get_current_document_version
 from apps.users.models import Consent, User
 from apps.users.views import DEFAULT_AVATAR_URL
 
@@ -44,6 +44,7 @@ class UserRegisterTest(TestCase):
             reverse("users:user_create"),
             data=self.valid_payload(),
             REMOTE_ADDR="203.0.113.42",
+            HTTP_X_FORWARDED_FOR="198.51.100.99",
             HTTP_USER_AGENT="RegistrationTest/1.0",
         )
 
@@ -66,7 +67,7 @@ class UserRegisterTest(TestCase):
         )
         self.assertEqual(
             consent.version,
-            CURRENT_DOCUMENT_VERSIONS[Consent.DocumentType.PERSONAL_DATA],
+            get_current_document_version(Consent.DocumentType.PERSONAL_DATA),
         )
         self.assertEqual(consent.source, Consent.Source.EMAIL_REGISTRATION)
         self.assertEqual(consent.ip, "203.0.113.42")
