@@ -153,6 +153,7 @@ def peek_yandex_oauth_consent(request: HttpRequest) -> bool:
 
 
 def serialize_consent(consent: Consent) -> dict[str, Any]:
+    withdrawal = getattr(consent, "withdrawal", None)
     return {
         "id": consent.pk,
         "document_type": consent.document_type,
@@ -161,11 +162,19 @@ def serialize_consent(consent: Consent) -> dict[str, Any]:
         "ip": consent.ip,
         "user_agent": consent.user_agent,
         "source": consent.source,
+        "withdrawn_at": withdrawal.withdrawn_at.isoformat()
+        if withdrawal
+        else None,
+        "withdrawal_request_id": withdrawal.request_log_id
+        if withdrawal
+        else None,
     }
 
 
 def serialize_user_consent_history(user: User) -> list[dict[str, Any]]:
     return [
         serialize_consent(consent)
-        for consent in user.consents.all().order_by("-timestamp", "-id")
+        for consent in user.consents.select_related("withdrawal").order_by(
+            "-timestamp", "-id"
+        )
     ]

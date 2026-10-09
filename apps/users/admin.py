@@ -6,6 +6,7 @@ from guardian.admin import GuardedModelAdmin
 from apps.parser.models import ChannelModerator
 from apps.users.models import (
     Consent,
+    ConsentWithdrawal,
     DataSubjectRequestLog,
     PartnerProfile,
     User,
@@ -178,6 +179,8 @@ class DataSubjectRequestLogAdmin(admin.ModelAdmin):
         "status",
         "requested_at",
         "completed_at",
+        "due_at",
+        "responsible",
     )
     list_filter = ("request_type", "http_method", "status")
     search_fields = ("subject_id_snapshot", "subject__email")
@@ -189,6 +192,14 @@ class DataSubjectRequestLogAdmin(admin.ModelAdmin):
         "status",
         "requested_at",
         "completed_at",
+        "due_at",
+        "original_due_at",
+        "result",
+        "responsible",
+        "extension_reason",
+        "extended_at",
+        "extension_notified_at",
+        "extension_notification_reference",
     )
 
     def has_add_permission(self, request: HttpRequest) -> bool:
@@ -247,5 +258,24 @@ class ConsentAdmin(admin.ModelAdmin):
         self,
         request: HttpRequest,
         obj: Consent | None = None,
+    ) -> bool:
+        return False
+
+
+@admin.register(ConsentWithdrawal)
+class ConsentWithdrawalAdmin(admin.ModelAdmin):
+    list_display = ("consent", "request_log", "withdrawn_at")
+    readonly_fields = ("consent", "request_log", "withdrawn_at")
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(
+        self, request: HttpRequest, obj: ConsentWithdrawal | None = None
+    ) -> bool:
+        return False
+
+    def has_delete_permission(
+        self, request: HttpRequest, obj: ConsentWithdrawal | None = None
     ) -> bool:
         return False

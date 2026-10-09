@@ -48,6 +48,10 @@ CELERY_TIMEZONE = "Europe/Moscow"  # project timezone
 
 # Celery dict with schedule
 CELERY_BEAT_SCHEDULE = {
+    "process-subject-requests-hourly": {
+        "task": "apps.users.tasks.process_subject_requests",
+        "schedule": crontab(minute="0"),
+    },
     "parse-all-channels-every-day-12-30": {
         "task": "apps.parser.tasks.parse_all_channels",  # path to task
         "schedule": crontab(hour="11", minute="40"),
