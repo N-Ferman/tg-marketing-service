@@ -471,7 +471,9 @@ class UserRegister(View):
                 user = form.save(commit=False)
                 user.role = "user"
                 if not user.avatar_image:
-                    user.avatar_image = DEFAULT_AVATAR_URL
+                    user.avatar_image = request.build_absolute_uri(
+                        DEFAULT_AVATAR_URL
+                    )
                 user.save()
                 record_consent(
                     user=user,
@@ -619,7 +621,7 @@ class AvatarChangeView(UserAuthenticationCheckMixin, View):
             avatar_form.save()
             request.session["flash"] = {"success": "Аватар успешно изменен"}
             return redirect(reverse("users:user_cabinet"))
-        avatar_error = avatar_form.errors.get("avatar_url")
+        avatar_error = avatar_form.errors.get("avatar_image")
         if avatar_error is not None:
             avatar_url = avatar_error.as_text()
             request.session["flash"] = {"error": f"{avatar_url[1:]}"}

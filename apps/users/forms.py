@@ -13,6 +13,7 @@ from django.http import HttpRequest
 from django.utils.crypto import get_random_string
 
 from apps.users.models import NotificationSettings, User
+from apps.users.validators import validate_http_url
 
 
 class UserLoginForm(forms.Form):
@@ -156,6 +157,7 @@ class UserRegForm(UserCreationForm):
     )
     avatar_image = forms.CharField(
         required=False,
+        validators=[validate_http_url],
         label="URL аватара",
         widget=forms.TextInput(
             attrs={"name": "avatar_image", "class": "form-control"}
@@ -237,6 +239,7 @@ class UserUpdateForm(forms.ModelForm):
     )
     avatar_image = forms.CharField(
         required=False,
+        validators=[validate_http_url],
         label="URL аватара",
         widget=forms.TextInput(
             attrs={"name": "avatar_image", "class": "form-control"}
@@ -308,21 +311,23 @@ class NotificationSettingsForm(forms.ModelForm):
 
 
 class AvatarChange(UserChangeForm):
+    avatar_image = forms.CharField(
+        required=False,
+        validators=[validate_http_url],
+        label="URL аватара",
+        widget=forms.TextInput(
+            attrs={
+                "id": "avatarUrl",
+                "name": "avatar_image",
+                "class": "form-control",
+                "placeholder": "https://example.com/avatar.jpg",
+            }
+        ),
+    )
+
     class Meta:
         model = User
         fields = ("avatar_image",)
-        avatar_image = forms.CharField(
-            required=False,
-            label="URL аватара",
-            widget=forms.TextInput(
-                attrs={
-                    "id": "avatarUrl",
-                    "name": "avatar_image",
-                    "class": "form-control",
-                    "placeholder": "https://example.com/avatar.jpg",
-                }
-            ),
-        )
 
 
 class RestorePasswordRequestForm(PasswordResetForm):
