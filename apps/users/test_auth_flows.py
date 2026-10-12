@@ -815,6 +815,39 @@ class RoleAssignmentSignalTest(InertiaAuthTestCase):
         user.refresh_from_db()
         self.assertEqual(user.role, "admin")
 
+    def test_partner_activation_does_not_overwrite_admin_role(self) -> None:
+        self.user.role = "admin"
+        self.user.save(update_fields=["role"])
+        profile = PartnerProfile.objects.create(user=self.user)
+
+        profile.status = "active"
+        profile.save(update_fields=["status"])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.role, "admin")
+
+    def test_saving_active_admin_partner_keeps_admin_shared_props(self) -> None:
+        self.user.role = "admin"
+        self.user.save(update_fields=["role"])
+        self.assertFalse(self.user.is_staff)
+        self.assertFalse(self.user.is_superuser)
+        profile = PartnerProfile.objects.create(user=self.user, status="active")
+        self.client.force_login(self.user)
+
+        profile.payment_details = "Updated payment details"
+        profile.save(update_fields=["payment_details"])
+
+        self.user.refresh_from_db()
+        profile.refresh_from_db()
+        self.assertEqual(profile.payment_details, "Updated payment details")
+        self.assertEqual(self.user.role, "admin")
+        props = self.assert_page(
+            self.client.get(reverse("users:login")), "Auth"
+        )
+        self.assertEqual(props["auth"]["role"], "admin")
+        self.assertEqual(props["role"], "admin")
+        self.assertTrue(props["is_admin"])
+
     def test_partner_activation_assigns_role_visible_in_shared_auth(
         self,
     ) -> None:
